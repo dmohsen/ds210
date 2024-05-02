@@ -3,6 +3,7 @@ use csv::ReaderBuilder;
 use std::fs::File;
 use std::error::Error;
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 #[derive(Debug, Deserialize, Clone)]
 struct Song {
@@ -42,8 +43,41 @@ impl Graph {
     }
 
     fn add_edge(&mut self, src: usize, dest: usize) {
-        self.adjacency_list[src].push(dest);
-        self.adjacency_list[dest].push(src); 
+            self.adjacency_list[src].push(dest);
+            self.adjacency_list[dest].push(src); 
+    }
+    
+    fn build_from_songs(songs: Vec<Song>) -> Self {
+        let mut graph = Self::new();
+        let mut artist_map: HashMap<String, Vec<usize>> = HashMap::new();
+
+        for song in songs.into_iter() {
+            let index = graph.add_vertex(song.clone());
+            artist_map.entry(song.artist_name).or_default().push(index);
+        }
+
+        for indices in artist_map.values() {
+            for &i in indices {
+                for &j in indices {
+                    if i != j {
+                        graph.add_edge(i, j);
+                    }
+                }
+            }
+        }
+
+        graph
+    }
+
+    fn print_graph(&self) {
+        for (i, edges) in self.adjacency_list.iter().enumerate() {
+            let song_name = &self.vertices[i].song_name;
+            print!("{}: ", song_name);
+            for &index in edges {
+                print!("{} ", self.vertices[index].song_name);
+            }
+            println!(); 
+        }
     }
 }
 
@@ -59,7 +93,6 @@ fn load_songs_from_csv(file_path: &str) -> Result<Vec<Song>, Box<dyn Error>> {
 
     Ok(songs)
 }
-
 
 fn main() {
     let songs = match load_songs_from_csv("Spotify_final_dataset.csv") {
@@ -77,6 +110,7 @@ fn main() {
     };
 
     let mut graph = Graph::build_from_songs(songs);
+    graph.print_graph();
 }
 
 
