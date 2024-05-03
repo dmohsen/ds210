@@ -43,8 +43,10 @@ impl Graph {
     }
 
     fn add_edge(&mut self, src: usize, dest: usize) {
+        if !self.adjacency_list[src].contains(&dest) {
             self.adjacency_list[src].push(dest);
             self.adjacency_list[dest].push(src); 
+        }
     }
     
     fn build_from_songs(songs: Vec<Song>) -> Self {
@@ -68,13 +70,28 @@ impl Graph {
 
         graph
     }
-
+    
     fn print_graph(&self) {
+        let mut artist_map: HashMap<&String, HashSet<&String>> = HashMap::new();
+
         for (i, edges) in self.adjacency_list.iter().enumerate() {
-            let song_name = &self.vertices[i].song_name;
-            print!("{}: ", song_name);
-            for &index in edges {
-                print!("{} ", self.vertices[index].song_name);
+            let artist_name = &self.vertices[i].artist_name;
+            if !edges.is_empty() { 
+                artist_map.entry(artist_name).or_default();
+                for &index in edges {
+                    let connected_song = &self.vertices[index].song_name;
+                    let connected_artist = &self.vertices[index].artist_name;
+                    if artist_name == connected_artist {
+                        artist_map.get_mut(artist_name).unwrap().insert(connected_song);
+                    }
+                }
+            }
+        }
+
+        for (artist, songs) in artist_map {
+            println!("{}: {} Songs", artist, songs.len());
+            for song in songs {
+                println!("  - {} ", song);
             }
             println!(); 
         }
@@ -112,5 +129,4 @@ fn main() {
     let mut graph = Graph::build_from_songs(songs);
     graph.print_graph();
 }
-
 
